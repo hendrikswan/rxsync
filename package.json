@@ -1,0 +1,28 @@
+{
+  "name": "rxsync",
+  "version": "0.0.1",
+  "description": "A lightweight library that operates on rxjs to reliably execute a stream of promises Edit",
+  "main": "index.js",
+  "dependencies": {
+    "rxjs": "^5.4.0"
+  },
+  "devDependencies": {
+    "mocha": "^3.4.2"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hendrikswan/rxsync.git"
+  },
+  "keywords": [
+    "RxJS"
+  ],
+  "author": "Hendrik Swanepoel <hendrik.swanepoel@gmail.com> (http://tagtree.io)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hendrikswan/rxsync/issues"
+  },
+  "homepage": "https://github.com/hendrikswan/rxsync#readme"
+}
