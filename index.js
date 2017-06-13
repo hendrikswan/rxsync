@@ -1,51 +1,27 @@
 const Rx = require('rxjs/Rx');
 
+const pausableBuffered = (observable, pauser) => {
+    const subj = new Rx.Subject();
 
-// const pausableBuffered = (observable, pauser) => {
-//     const subj = new Rx.Subject();
+    let buffer = [];
+    const nextEmitter = x => subj.next(x);
+    const nextBuffer = x => buffer.push(x);
 
-//     let buffer = [];
-//     const nextEmitter = x => subj.next(x);
-//     const nextBuffer = x => buffer.push(x);
+    let subscriber = nextEmitter;
+    observable.subscribe(x => subscriber(x));
 
-//     let subscriber = nextEmitter;
-//     observable.subscribe(x => subscriber(x));
+    pauser.subscribe(value => {
+        if (value) {
+            subscriber = nextBuffer;
+        } else {
+            buffer.forEach(nextEmitter);
+            buffer = [];
+            subscriber = nextEmitter;
+        }
+    });
 
-//     pauser.subscribe(value => {
-//         if (value) {
-//             subscriber = nextBuffer;
-//         } else {
-//             buffer.forEach(nextEmitter);
-//             buffer = [];
-//             subscriber = nextEmitter;
-//         }
-//     });
-
-//     return subj;
-// };
-
-Rx.Observable.prototype.pausableBuffered = (pauser) => {
-  const subj = new Rx.Subject();
-
-  let buffer = [];
-  const nextEmitter = x => subj.next(x);
-  const nextBuffer = x => buffer.push(x);
-
-  let subscriber = nextEmitter;
-  this.subscribe(x => subscriber(x));
-
-  pauser.subscribe(value => {
-    if (value) {
-      subscriber = nextBuffer;
-    } else {
-      buffer.forEach(nextEmitter);
-      buffer = [];
-      subscriber = nextEmitter;
-    }
-  });
-
-  return subj;
-}
+    return subj;
+};
 
 
 function createSync({
@@ -58,9 +34,11 @@ function createSync({
   const syncedItems = new Rx.Subject();
   const failedItems = new Rx.Subject();
   
-  const pendingItems = new Rx.Subject();
-  // const delayedPending = pendingItems.
-  const pausablePending = pauseSubject.pausableBuffered(pauseSubject);
+  const pendingIn = new Rx.Subject();
+  const delayedPending = pendingIn
+    .map(item => Rx.Observable.of(item).delay(item.sync.counter > 0 ? delayBetweenRetries : 0))
+    .mergeAll();
+  const pendingOut = pausableBuffered(delayedPending, pauseSubject);
 
   function log() {
     if (loggingEnabled) {
@@ -70,7 +48,7 @@ function createSync({
 
   function internalQueue(item) {
     log('queuing an item ', item);
-    if (item.sync.counter >= maxRetries - 1) {
+    if (item.sync.counter >= maxRetries) {
       failedItems.next(item);
       return;
     }
@@ -82,10 +60,10 @@ function createSync({
       },
     });
 
-    pendingItems.next(workingItem);
+    pendingIn.next(workingItem);
   }
 
-  pausablePending.subscribe((item) => {
+  pendingOut.subscribe((item) => {
     log('got an item from the pending stream: ', item);
     syncAction(item)
       .then(result => {
