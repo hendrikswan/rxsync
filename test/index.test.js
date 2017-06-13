@@ -52,6 +52,19 @@ describe('sync', function() {
     sync.queue({ id: 2 });
   });
 
+  it('when it calls the promise creator, it passes trough the original message', (done) => {
+    const sync = createSync({
+      syncAction: (item) => {
+        assert.equal(1, item.id);
+        done();
+        return Promise.resolve(1);
+      },
+      maxRetries: 0,
+    });
+
+    sync.queue({ id: 1 });
+  });  
+
 
   it('when an item fails, it gets retried up to the maximum number of retries', (done) => {
     let numberOfTries = 0;

@@ -63,16 +63,21 @@ function createSync({
     pendingIn.next(workingItem);
   }
 
-  pendingOut.subscribe((item) => {
+  pendingOut.subscribe((itemWithMetaData) => {
+    const item = itemWithMetaData.item;
     log('got an item from the pending stream: ', item);
     syncAction(item)
       .then(result => {
         log('successfully executed the sync action for ', item);
-        syncedItems.next(Object.assign({}, item, result));
+        syncedItems.next(Object.assign({}, itemWithMetaData, {
+          sync: Object.assign({}, itemWithMetaData.sync, { result })
+        }));
       })
       .catch(error => {
         log('got an error while trying to sync item: ', item, error);
-        internalQueue(Object.assign({}, item, error));
+        internalQueue(Object.assign({}, itemWithMetaData, {
+          sync: Object.assign({}, itemWithMetaData.sync, { error })
+        }));
       });
   });
 
