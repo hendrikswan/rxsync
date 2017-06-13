@@ -31,7 +31,7 @@ You call createSync to get a sync object, which you can use afterwards to queue 
 const sync = createSync({
   maxRetries: 3, 
   delayBetweenRetries: 500,
-  syncAction: (item) => fetch(`http://google.com/?s=${item.search}`)), // a
+  syncAction: (item) => fetch(`http://google.com/?s=${item.search}`))
 });
 
 ```
