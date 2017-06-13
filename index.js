@@ -25,7 +25,7 @@ const pausableBuffered = (observable, pauser) => {
 
 
 function createSync({
-  maxRetries = 1000,
+  maxRetries = 0,
   delayBetweenRetries = 0,
   syncAction,
   loggingEnabled = false,
@@ -48,7 +48,7 @@ function createSync({
 
   function internalQueue(item) {
     log('queuing an item ', item);
-    if (item.sync.counter >= maxRetries) {
+    if (item.sync.counter > 0 && item.sync.counter >= maxRetries) {
       failedItems.next(item);
       return;
     }
@@ -95,21 +95,5 @@ function createSync({
     failedItems,
   };
 }
-
-const sync = createSync({
-  maxRetries: 2,
-  delayBetweenRetries: 2000,
-  syncAction: (item) => {
-    return new Promise((resolve, reject) => {
-      const success = Boolean(Math.round(Math.random()));
-      if (success) {
-        resolve();
-      } else {
-        reject();
-      }
-    });
-  },
-});
-
 
 module.exports = createSync;

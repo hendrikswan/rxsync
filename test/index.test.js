@@ -1,8 +1,9 @@
 const assert = require('assert');
 const createSync = require('../index');
 
-describe('#createSync', function() {
+describe('sync', function() {
   this.timeout(2000);
+
   it('executes all promises and streams out to success stream', (done) => {
     const sync = createSync({
       syncAction: (item) => {
@@ -15,7 +16,7 @@ describe('#createSync', function() {
     let counter = 0;
 
     sync.syncedItems.subscribe(x => {
-      // console.log('Received an item from the synced stream: ', x);
+      console.log('Received an item from the synced stream: ', x);
       counter++;
       if (counter === 2) {
         done();
