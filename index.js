@@ -1,27 +1,51 @@
 const Rx = require('rxjs/Rx');
 
-const pausableBuffered = (observable, pauser) => {
-    const subj = new Rx.Subject();
 
-    let buffer = [];
-    const nextEmitter = x => subj.next(x);
-    const nextBuffer = x => buffer.push(x);
+// const pausableBuffered = (observable, pauser) => {
+//     const subj = new Rx.Subject();
 
-    let subscriber = nextEmitter;
-    observable.subscribe(x => subscriber(x));
+//     let buffer = [];
+//     const nextEmitter = x => subj.next(x);
+//     const nextBuffer = x => buffer.push(x);
 
-    pauser.subscribe(value => {
-        if (value) {
-            subscriber = nextBuffer;
-        } else {
-            buffer.forEach(nextEmitter);
-            buffer = [];
-            subscriber = nextEmitter;
-        }
-    });
+//     let subscriber = nextEmitter;
+//     observable.subscribe(x => subscriber(x));
 
-    return subj;
-};
+//     pauser.subscribe(value => {
+//         if (value) {
+//             subscriber = nextBuffer;
+//         } else {
+//             buffer.forEach(nextEmitter);
+//             buffer = [];
+//             subscriber = nextEmitter;
+//         }
+//     });
+
+//     return subj;
+// };
+
+Rx.Observable.prototype.pausableBuffered = (pauser) => {
+  const subj = new Rx.Subject();
+
+  let buffer = [];
+  const nextEmitter = x => subj.next(x);
+  const nextBuffer = x => buffer.push(x);
+
+  let subscriber = nextEmitter;
+  this.subscribe(x => subscriber(x));
+
+  pauser.subscribe(value => {
+    if (value) {
+      subscriber = nextBuffer;
+    } else {
+      buffer.forEach(nextEmitter);
+      buffer = [];
+      subscriber = nextEmitter;
+    }
+  });
+
+  return subj;
+}
 
 
 function createSync({
@@ -32,9 +56,11 @@ function createSync({
 }) {
   const pauseSubject = new Rx.Subject();
   const syncedItems = new Rx.Subject();
-  const pendingItems = new Rx.Subject();
   const failedItems = new Rx.Subject();
-  const pausablePending = pausableBuffered(pendingItems, pauseSubject);
+  
+  const pendingItems = new Rx.Subject();
+  // const delayedPending = pendingItems.
+  const pausablePending = pauseSubject.pausableBuffered(pauseSubject);
 
   function log() {
     if (loggingEnabled) {
@@ -109,21 +135,3 @@ const sync = createSync({
 
 
 module.exports = createSync;
-
-/*
-for (let index = 0; index < 100; index++) {
-  sync.queue({
-    id: index,
-  });
-
-  if (index === 50) {
-    sync.pause();
-  }
-}
-
-
-setTimeout(sync.resume, 5000);
-
-sync.syncedItems.subscribe(item => console.log('successfully synced: ', item));
-sync.syncedItems.subscribe(item => console.log('failed sync: ', item));
-*/
